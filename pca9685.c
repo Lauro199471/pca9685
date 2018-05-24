@@ -57,6 +57,7 @@ int baseReg(int pin);
  */
 int pca9685Setup(const int pinBase, const int i2cAddress, float freq)
 {
+	 wiringPiSetupGpio(); // Initalize Pi GPIO
 	// Create a node with 16 pins [0..15] + [16] for all
 	struct wiringPiNodeStruct *node = wiringPiNewNode(pinBase, PIN_ALL + 1);
 
