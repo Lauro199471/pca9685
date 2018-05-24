@@ -1,8 +1,8 @@
 /*************************************************************************
- * servo.c
+ * leds.c
  *
- * PCA9685 servo example
- * Connect a servo to any pin. It will rotate to random angles.
+ * PCA9685 LED example
+ * Drive some LEDs with the PCA9685
  *
  *
  * This software is a devLib extension to wiringPi <http://wiringpi.com/>
@@ -28,9 +28,11 @@
  **************************************************************************
  */
 
+
 #include "pca9685.h"
 
 #include <wiringPi.h>
+#include <wiringPiI2C.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,31 +42,11 @@
 #define HERTZ 50
 
 
-/**
- * Calculate the number of ticks the signal should be high for the required amount of time
- */
-int calcTicks(float impulseMs, int hertz)
-{
-	float cycleMs = 1000.0f / hertz;
-	return (int)(MAX_PWM * impulseMs / cycleMs + 0.5f);
-}
-
-/**
- * input is [0..1]
- * output is [min..max]
- */
-float map(float input, float min, float max)
-{
-	return (input * max) + (1 - input) * min;
-}
-
 
 int main(void)
 {
-	printf("PCA9685 servo example\n");
-	printf("Connect a servo to any pin. It will rotate to random angles\n");
+	printf("PCA9685 LED example\n");
 
-	// Setup with pinbase 300 and i2c location 0x40
 	int fd = pca9685Setup(PIN_BASE, 0x40, HERTZ);
 	if (fd < 0)
 	{
@@ -72,32 +54,50 @@ int main(void)
 		return fd;
 	}
 
-	// Reset all output
 	pca9685PWMReset(fd);
 
-
-	// Set servo to neutral position at 1.5 milliseconds
-	// (View http://en.wikipedia.org/wiki/Servo_control#Pulse_duration)
-	float millis = 1.5;
-	int tick = calcTicks(millis, HERTZ);
-	pwmWrite(PIN_BASE + 16, tick);
-	delay(2000);
-
-
+	int i, j;
 	int active = 1;
+
 	while (active)
 	{
-		// That's a hack. We need a random number < 1
-		float r = rand();
-		while (r > 1)
-			r /= 10;
+		for (j = 0; j < 5; j++)
+		{
+			for (i = 0; i < MAX_PWM; i += 32)
+			{
+				pwmWrite(PIN_BASE + 16, i);
+				delay(4);
+			}
 
-		millis = map(r, 1, 2);
-		tick = calcTicks(millis, HERTZ);
+			for (i = 0; i < MAX_PWM; i += 32)
+			{
+				pwmWrite(PIN_BASE + 16, MAX_PWM - i);
+				delay(4);
+			}
+		}
 
-		pwmWrite(PIN_BASE + 16, tick);
-		delay(1000);
+		pwmWrite(PIN_BASE + 16, 0);
+		delay(500);
+
+		for (j = 0; j < 5; j++)
+		{
+			for (i = 0; i < 16; i++)
+			{
+				pwmWrite(PIN_BASE + i, MAX_PWM);
+				delay(20);
+			}
+
+			for (i = 0; i < 16; i++)
+			{
+				pwmWrite(PIN_BASE + i, 0);
+				delay(20);
+			}
+		}
+
+		pwmWrite(PIN_BASE + 16, 0);
+		delay(500);
 	}
+
 
 	return 0;
 }
